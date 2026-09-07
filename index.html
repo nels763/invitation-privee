@@ -207,6 +207,8 @@ button{font-family:var(--body);cursor:pointer}
   touch-action:none;
   user-select:none;
   -webkit-user-select:none;
+  /* pas de transition sur transform : il se teleporte, on ne peut pas le suivre */
+  transition:opacity .3s var(--ease), border-color .3s;
 }
 #no.gone{opacity:0;pointer-events:none;transform:scale(.2) rotate(-14deg)!important}
 
