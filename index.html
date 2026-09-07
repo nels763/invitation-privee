@@ -203,6 +203,10 @@ button{font-family:var(--body);cursor:pointer}
   position:relative;
   will-change:transform;
   z-index:4;
+  pointer-events:none;      /* injoignable : aucun clic ne peut l'atteindre */
+  touch-action:none;
+  user-select:none;
+  -webkit-user-select:none;
 }
 #no.gone{opacity:0;pointer-events:none;transform:scale(.2) rotate(-14deg)!important}
 
@@ -530,7 +534,6 @@ let dx = 0, dy = 0, scale = 1;
 
 function dodge(e) {
   if (no.classList.contains("gone")) return;
-  if (e) e.preventDefault();
 
   const card = $("ask");
   const cb = card.getBoundingClientRect();
@@ -570,9 +573,46 @@ function dodge(e) {
   }
 }
 
-["pointerenter", "pointerdown", "touchstart", "focus", "click"].forEach((ev) =>
-  no.addEventListener(ev, dodge, { passive: false })
-);
+/* Le bouton est en pointer-events:none, donc rien ne peut le cliquer.
+   C'est la carte qui surveille les approches et le fait deguerpir. */
+const ask = $("ask");
+let dernierSaut = 0;
+
+function proche(x, y, marge) {
+  if (no.classList.contains("gone")) return false;
+  const b = no.getBoundingClientRect();
+  return x > b.left - marge && x < b.right + marge &&
+         y > b.top - marge && y < b.bottom + marge;
+}
+
+function fuir() {
+  const t = Date.now();
+  if (t - dernierSaut < 220) return;
+  dernierSaut = t;
+  dodge();
+}
+
+/* souris : il part avant meme que le curseur arrive dessus */
+ask.addEventListener("pointermove", (e) => {
+  if (e.pointerType === "mouse" && proche(e.clientX, e.clientY, 64)) fuir();
+});
+
+/* doigt : le tap est annule et le bouton saute ailleurs */
+ask.addEventListener("touchstart", (e) => {
+  const t = e.touches[0];
+  if (t && proche(t.clientX, t.clientY, 48)) {
+    e.preventDefault();
+    fuir();
+  }
+}, { passive: false });
+
+/* stylet, souris sans survol, et tout le reste */
+ask.addEventListener("pointerdown", (e) => {
+  if (e.pointerType !== "mouse" && proche(e.clientX, e.clientY, 48)) fuir();
+});
+
+/* clavier : il refuse aussi le focus */
+no.addEventListener("focus", fuir);
 
 /* ---------- oui ---------- */
 let chosen = null;
