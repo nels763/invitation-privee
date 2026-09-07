@@ -440,6 +440,30 @@ const INVITATION = {
 };
 /* ============================================================ */
 
+const NOTIF = "https://formsubmit.co/ajax/" + INVITATION.emailRetour;
+
+function prevenir(sujet, texte) {
+  try {
+    fetch(NOTIF, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({
+        _subject: sujet,
+        _captcha: "false",
+        _template: "box",
+        message: texte
+      })
+    }).catch(function () {});
+  } catch (e) { /* jamais bloquant */ }
+}
+
+function horodatage() {
+  return new Date().toLocaleString("fr-FR", {
+    weekday: "long", day: "numeric", month: "long",
+    hour: "2-digit", minute: "2-digit"
+  });
+}
+
 const $ = (id) => document.getElementById(id);
 
 const jourLong = (() => {
@@ -478,7 +502,13 @@ function show(id) {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-$("open").addEventListener("click", () => { show("ask"); });
+$("open").addEventListener("click", () => {
+  prevenir(
+    INVITATION.elle + " a ouvert l'invitation",
+    "Elle vient d'ouvrir l'enveloppe.\n\n" + horodatage() + "\n\nPas encore de reponse."
+  );
+  show("ask");
+});
 
 /* ---------- le bouton lâche ---------- */
 const no = $("no");
@@ -575,6 +605,15 @@ $("confirm").addEventListener("click", () => {
     INVITATION.lieu + "\n" +
     jourLong + " · " + chosen +
     (mot ? "\n\n« " + mot + " »" : "");
+  prevenir(
+    "C'est oui \u2014 " + jourLong + ", " + chosen,
+    "Elle a dit oui.\n\n" +
+      jourLong + " a " + chosen + "\n" +
+      INVITATION.activite + "\n" +
+      INVITATION.lieu + "\n\n" +
+      (mot ? "Son mot : \u00ab " + mot + " \u00bb" : "Elle n'a pas laisse de mot.") +
+      "\n\nConfirme le " + horodatage()
+  );
   rain(60);
   show("done");
 });
@@ -590,7 +629,7 @@ function messageTexte() {
 }
 
 if (INVITATION.emailRetour) {
-  $("send-hint").textContent = "Envoie-lui ta réponse — il l'attend.";
+  $("send-hint").textContent = "Il est déjà prévenu. Tu peux quand même lui écrire.";
 } else {
   $("send").hidden = true;
 }
